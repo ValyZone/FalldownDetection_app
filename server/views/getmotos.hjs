@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motorbike Table</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            background-color: #d3d3f7;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #a9a9d6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Motorbike Table</h1>
+    <table id="motorTable">
+        <thead>
+            <tr>
+                <th>ownerId</th>
+                <th>type</th>
+                <th>brand</th>
+                <th>model</th>
+                <th>cc</th>
+                <th>year</th>
+                <th>deleted</th>
+            </tr>
+        </thead>
+        <tbody id="motosTableBody">
+        </tbody>
+    </table>
+
+    <div class="button-container">
+        <a href="/" class="button">Back</a>
+    </div>
+
+    <script>
+        fetch('/getMotos/allMotos')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(motos => {
+                const motosTableBody = document.getElementById('motosTableBody');
+                motos.forEach(moto => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${moto.ownerId}</td>
+                        <td>${moto.type}</td>
+                        <td>${moto.brand}</td>
+                        <td>${moto.model}</td>
+                        <td>${moto.cc}</td>
+                        <td>${moto.year}</td>
+                        <td>${moto.deleted}</td>
+                    `;
+                    motosTableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error fetching motos:', error));
+    </script>
+</body>
+</html>

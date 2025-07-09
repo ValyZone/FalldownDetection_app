@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Add a new motorbike</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .login-form {
+            width: 300px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px 0px #0000001a;
+        }
+
+        .login-form h2 {
+            margin-bottom: 20px;
+        }
+
+        .login-form p {
+            font-size: smaller;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background-color: #007BFF;
+            color: #ffffff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .login-form button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-form">
+        <h2>Add new Motorbike</h2>
+        <p>Insert data here:</p>
+        <form action="/postMotos/processed" method="post">
+            <input type="text" name="ownerId" placeholder="ownerId" >
+            <input type="text" name="type" placeholder="type" >
+            <input type="text" name="brand" placeholder="brand" >
+            <input type="text" name="model" placeholder="model" >
+            <input type="text" name="cc" placeholder="cc" >
+            <input type="text" name="year" placeholder="year" >
+            <input type="text" name="deleted" placeholder="deleted">
+            <button type="submit">Add new Motorbike</button>
+            
+        </form>
+        <a href="../">Back</a>
+    </div>
+</body>
+
+</html>

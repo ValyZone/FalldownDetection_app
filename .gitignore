@@ -1,0 +1,7 @@
+server/mongodb/
+server/mongodb-data/
+server/node_modules/
+mongodb
+dataVizualization
+FallDetectionResults/
+.env

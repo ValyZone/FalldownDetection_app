@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run mongo && nodemon src/index.js",
+    "start:manual": "npm run mongo && node src/index.js",
+    "start:server": "nodemon src/index.js",
+    "mongo": "start ../mongodb/bin/mongod.exe --dbpath \"./mongodb-data\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.13.0",
+    "discord.js": "^14.17.3",
+    "express": "^4.19.2",
+    "mongodb": "^6.6.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

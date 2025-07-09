@@ -1,0 +1,1 @@
+start D:\repos\FalldownDetection_app\mongodb\bin\mongod.exe --dbpath ".\mongodb-data"
