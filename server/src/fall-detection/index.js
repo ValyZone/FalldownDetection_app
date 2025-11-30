@@ -31,8 +31,6 @@ function detectFall(filePath) {
             
             // Skip if we get NaN values (like from header row)
             if (isNaN(accelX) || isNaN(accelY) || isNaN(accelZ)) continue;
-            
-            console.log(`Time: ${timestamp}, X: ${accelX}, Y: ${accelY}, Z: ${accelZ}`);
 
             axisSums.X += Math.abs(accelX - 9.81);
             axisSums.Y += Math.abs(accelY - 9.81);

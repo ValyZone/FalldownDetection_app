@@ -1,38 +1,33 @@
-import { Client, IntentsBitField } from 'discord.js';
-import dotenv from 'dotenv';
+import { Client, IntentsBitField } from 'discord.js'
+import { config } from '../config.js'
 
-// Load environment variables
-dotenv.config();
-
-export function startBot(){
-
+export function startBot() {
     const discord = new Client({
         intents: [
             IntentsBitField.Flags.Guilds,
             IntentsBitField.Flags.GuildMessages,
         ],
-    });
-    
-    discord.login(process.env.DISCORD_TOKEN);
-    
-    discord.on('ready', (c) => {
-        console.log(`🤖 ${c.user.displayName} is Online!`);
-    });
-    
-    return discord;
+    })
+
+    discord.login(config.discordToken)
+
+    discord.on('ready', (client) => {
+        console.log(`🤖 ${client.user.displayName} is online!`)
+    })
+
+    return discord
 }
 
 export async function sendMessage(discord, message) {
-    const channelId = '1392588317056565351';
     try {
-        const channel = await discord.channels.fetch(channelId);
+        const channel = await discord.channels.fetch(config.discordChannelId)
         if (channel) {
-            await channel.send(message);
-            console.log(`📨 Message sent to channel ${channelId}: ${message}`);
+            await channel.send(message)
+            console.log(`📨 Discord notification sent successfully`)
         } else {
-            console.error(`❌ Channel ${channelId} not found`);
+            console.error(`❌ Discord channel not found: ${config.discordChannelId}`)
         }
     } catch (error) {
-        console.error('❌ Error sending message:', error);
+        console.error('❌ Error sending Discord message:', error.message)
     }
 }

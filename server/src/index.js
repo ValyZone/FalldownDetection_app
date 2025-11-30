@@ -1,15 +1,14 @@
-import { CreateApp } from "./app.js"
-import { connectToMongo } from './mongo/mongo-storage.js'
+import { CreateApp } from './app.js'
+import { config } from './config.js'
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.log('ALERT ALERT ALERT (Graceful shutdown..): ', reason)
-    //...
+    console.error('Unhandled Rejection:', reason)
     process.exit(1)
 })
 
-const client = await connectToMongo('mongodb://localhost:27017')
-const app = CreateApp(client)
+const app = CreateApp()
 
-app.listen(3030, '0.0.0.0', () => {
-    console.log('App is running 🚀')
+app.listen(config.port, config.host, () => {
+    console.log(`🚀 Fall Detection Server running on http://${config.host}:${config.port}`)
+    console.log(`📊 Environment: ${config.nodeEnv}`)
 })

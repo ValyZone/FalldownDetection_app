@@ -1,25 +1,23 @@
 {
-  "name": "server",
+  "name": "fall-detection-server",
   "type": "module",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Fall Detection Server - Processes accelerometer data and detects falls",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run mongo && nodemon src/index.js",
-    "start:manual": "npm run mongo && node src/index.js",
-    "start:server": "nodemon src/index.js",
-    "mongo": "start ../mongodb/bin/mongod.exe --dbpath \"./mongodb-data\""
+    "start": "nodemon src/index.js",
+    "start:prod": "node src/index.js",
+    "test": "node test-runner.js",
+    "test:manual": "node manual-test.js"
   },
-  "keywords": [],
+  "keywords": ["fall-detection", "accelerometer", "discord-bot"],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ajv": "^8.13.0",
     "discord.js": "^14.17.3",
+    "dotenv": "^17.2.3",
     "express": "^4.19.2",
-    "mongodb": "^6.6.1",
-    "zod": "^3.23.8"
+    "ejs": "^3.1.9"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

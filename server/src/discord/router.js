@@ -1,40 +1,42 @@
-import express from 'express';
-import {startBot} from './bot.js'
+import express from 'express'
+import { startBot, sendMessage } from './bot.js'
 
 function CreateDiscordRouter(dependencies) {
-    const discordClient = startBot(dependencies);
-
-    const discordRouter = express.Router();
+    const discordClient = startBot()
+    const discordRouter = express.Router()
 
     discordRouter.post('/sendMessage', async (req, res, next) => {
         try {
-            discordClient.channels.cache.get('1328731691170267136').send(res.locals.parsed.message)
-            res.status(201).send("Message sent.");
+            const message = res.locals.parsed?.message || req.body.message
+            if (!message) {
+                return res.status(400).json({ error: 'Message is required' })
+            }
+            await sendMessage(discordClient, message)
+            res.status(201).json({ success: true, message: 'Message sent successfully' })
         } catch (err) {
-            next(err);
-        }
-    });
-
-    discordRouter.get('/alarm', async (req, res) => {
-        try {
-            discordClient.channels.cache.get('1328731691170267136').send("Alert.")
-            res.status(201).send("Message sent.");
-        } catch (err) {
-            next(err);
+            next(err)
         }
     })
 
-    discordRouter.get('/falseAlarm', async (req, res) => {
+    discordRouter.post('/alarm', async (req, res, next) => {
         try {
-            discordClient.channels.cache.get('1328731691170267136').send("False Alert.")
-            res.status(201).send("Message sent.");
+            await sendMessage(discordClient, '🚨 ALERT: Potential fall detected!')
+            res.status(201).json({ success: true, message: 'Alert sent successfully' })
         } catch (err) {
-            next(err);
+            next(err)
         }
     })
 
-    return {discordRouter, discordClient} ;
+    discordRouter.post('/falseAlarm', async (req, res, next) => {
+        try {
+            await sendMessage(discordClient, '✅ False alarm - User confirmed they are okay')
+            res.status(201).json({ success: true, message: 'False alarm notification sent' })
+        } catch (err) {
+            next(err)
+        }
+    })
+
+    return { discordRouter, discordClient }
 }
-
 
 export default CreateDiscordRouter
