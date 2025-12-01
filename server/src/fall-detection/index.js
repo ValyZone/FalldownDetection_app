@@ -5,6 +5,18 @@ import { startBot, sendMessage } from '../discord/bot.js';
 // Initialize Discord bot
 const discord = startBot();
 
+/**
+ * Formats a timestamp as [minutes:seconds:milliseconds]
+ * @param {Date} date - The date object to format
+ * @returns {string} - Formatted timestamp
+ */
+function formatTimestamp(date) {
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+    return `[${minutes}-${seconds}-${milliseconds}]`;
+}
+
 function detectFall(filePath) {
     /**
      * Detects if a fall occurred based on accelerometer data from a CSV file.
@@ -21,6 +33,7 @@ function detectFall(filePath) {
 
         const axisSums = { X: 0, Y: 0, Z: 0 };
         let rowCount = 0;
+        const allValues = []; // Store all accelerometer values for CSV export
 
         for (const row of rows) {
             if (!row.trim()) continue;
@@ -28,9 +41,12 @@ function detectFall(filePath) {
             // Handle both comma and tab separated values
             const values = row.includes('\t') ? row.split('\t') : row.split(',');
             const [timestamp, accelX, accelY, accelZ, absoluteAccel] = values.map(value => parseFloat(value.replace(/"/g, '')));
-            
+
             // Skip if we get NaN values (like from header row)
             if (isNaN(accelX) || isNaN(accelY) || isNaN(accelZ)) continue;
+
+            // Store values for CSV export
+            allValues.push({ timestamp, accelX, accelY, accelZ, absoluteAccel });
 
             axisSums.X += Math.abs(accelX - 9.81);
             axisSums.Y += Math.abs(accelY - 9.81);
@@ -78,15 +94,40 @@ function detectFall(filePath) {
             fs.mkdirSync(outputDir);
         }
 
-        const outputFileName = path.join(outputDir, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+        // Generate timestamp for file naming
+        const now = new Date();
+        const timestamp = formatTimestamp(now);
+
+        // Save JSON result
+        const outputFileName = path.join(outputDir, `${now.toISOString().replace(/[:.]/g, '-')}.json`);
         fs.writeFileSync(outputFileName, JSON.stringify(result, null, 2));
+
+        // Export all accelerometer values to CSV
+        const valuesCSV = ['Time (s),Acceleration x (m/s^2),Acceleration y (m/s^2),Acceleration z (m/s^2),Absolute acceleration (m/s^2)'];
+        allValues.forEach(v => {
+            valuesCSV.push(`${v.timestamp},${v.accelX},${v.accelY},${v.accelZ},${v.absoluteAccel}`);
+        });
+        const valuesFileName = path.join(outputDir, `${timestamp}-values.csv`);
+        fs.writeFileSync(valuesFileName, valuesCSV.join('\n'));
+
+        // Export fall events to CSV
+        const eventsCSV = ['Event,Time (s),Value,Axis'];
+        fallEvents.forEach(event => {
+            const axis = event.X !== undefined ? 'X' : event.Y !== undefined ? 'Y' : 'Z';
+            const value = event[axis];
+            eventsCSV.push(`${event.event},${event.timestamp},${value},${axis}`);
+        });
+        const eventsFileName = path.join(outputDir, `${timestamp}-event.csv`);
+        fs.writeFileSync(eventsFileName, eventsCSV.join('\n'));
 
         // Send Discord notification if fall is detected
         if (isFalling && hitGround) {
             const message = `🚨 **ESÉS ÉRZÉKELVE!** 🚨\n\n` +
                           `⏰ Idő: ${new Date().toLocaleString()}\n\n` +
                           `📊 Domináns Tengely: ${dominantAxis}\n` +
-                          `📁 Esés adatokat tartalmazó fájl neve: ${path.basename(outputFileName)}\n\n` +
+                          `📁 JSON adatok: ${path.basename(outputFileName)}\n` +
+                          `📈 Értékek CSV: ${path.basename(valuesFileName)}\n` +
+                          `⚡ Események CSV: ${path.basename(eventsFileName)}\n\n` +
                           `🆘 Emergency services may need to be contacted!` +
                           "\n------------------------------------------------------------";
             

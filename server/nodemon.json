@@ -1,0 +1,11 @@
+{
+  "watch": ["src"],
+  "ignore": [
+    "FallDetectionResults/**",
+    "mongodb-data/**",
+    "test-data/**",
+    "*.log",
+    "*.txt"
+  ],
+  "ext": "js,json,ejs"
+}
