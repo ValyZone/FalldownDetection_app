@@ -36,6 +36,15 @@ function CreateDiscordRouter(dependencies) {
         }
     })
 
+    discordRouter.post('/userFine', async (req, res, next) => {
+        try {
+            await sendMessage(discordClient, '✅ User is fine - Everything is okay')
+            res.status(201).json({ success: true, message: 'User fine notification sent' })
+        } catch (err) {
+            next(err)
+        }
+    })
+
     return { discordRouter, discordClient }
 }
 
