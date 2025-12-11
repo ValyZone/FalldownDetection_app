@@ -406,34 +406,27 @@ function detectFall(filePath) {
     // Send Discord notification if fall is detected
     if (fallDetected) {
       const firstFall = validFalls[0];
-      const message = `🚨 **MOTOROS ESÉS ÉRZÉKELVE!** 🚨\n\n` +
-                    `⏰ Észlelés időpontja: ${new Date().toLocaleString()}\n\n` +
-                    `📊 **Háromfázisú észlelés részletei:**\n` +
-                    `\n**Fázis 1 - Lassulás:**\n` +
-                    `   └ Kezdet: ${firstFall.deceleration.startTime.toFixed(3)}s\n` +
-                    `   └ Időtartam: ${firstFall.deceleration.duration.toFixed(3)}s\n` +
-                    `   └ Csúcs lassulás: ${firstFall.deceleration.peakValue.toFixed(2)} m/s² (${firstFall.deceleration.axis} tengely)\n` +
-                    `\n**Fázis 2 - Szabadesés:**\n` +
-                    `   └ Kezdet: ${firstFall.freefall.startTime.toFixed(3)}s\n` +
-                    `   └ Időtartam: ${firstFall.freefall.duration.toFixed(3)}s\n` +
-                    `   └ Min. gyorsulás: ${firstFall.freefall.minValue.toFixed(2)} m/s²\n` +
-                    `\n**Fázis 3 - Becsapódás:**\n` +
-                    `   └ Időpont: ${firstFall.impact.time.toFixed(3)}s\n` +
-                    `   └ Becsapódási erő: ${firstFall.impact.peakValue.toFixed(2)} m/s² (~${(firstFall.impact.peakValue / 9.81).toFixed(1)}g)\n` +
-                    `\n⏱️ **Teljes esemény időtartama:** ${firstFall.totalDuration.toFixed(3)}s\n` +
-                    `📈 **Összes észlelt esés:** ${validFalls.length}\n\n` +
-                    `📁 **Exportált fájlok:**\n` +
-                    `   └ JSON: ${path.basename(outputFileName)}\n` +
-                    `   └ Értékek CSV: ${path.basename(valuesFileName)}\n` +
-                    `   └ Események CSV: ${path.basename(eventsFileName)}\n\n` +
-                    `🆘 **Emergency services may need to be contacted!**` +
-                    `\n------------------------------------------------------------`;
+      const message = `🚨 **ESÉS ÉRZÉKELVE** 🚨\n\n` +
+                    `⏰ ${new Date().toLocaleString('hu-HU')}\n\n` +
+                    `⚠️ Még nem érkezett visszajelzés a felhasználótól`;
 
       sendMessage(discord, message).catch(error => {
-        console.error('❌ Failed to send Discord notification:', error);
+        console.error('❌ Discord értesítés küldése sikertelen:', error);
       });
 
-      console.log('🚨 Fall detected! Discord notification sent.');
+      // Enhanced console output
+      console.log('\n' + '═'.repeat(60));
+      console.log('🚨 ESÉS ÉRZÉKELVE - DISCORD RIASZTÁS KÜLDÉSE');
+      console.log('═'.repeat(60));
+      console.log(`⏰ Időpont: ${new Date().toLocaleString('hu-HU')}`);
+      console.log(`📍 Helyszín: FallDetectionResults/${path.basename(outputFileName)}`);
+      console.log(`\n📊 FÁZIS BONTÁS:`);
+      console.log(`   1️⃣ Lassulás: ${firstFall.deceleration.startTime.toFixed(2)}s → ${(Math.abs(firstFall.deceleration.peakValue) / 9.81).toFixed(1)}g a ${firstFall.deceleration.axis}-tengelyen`);
+      console.log(`   2️⃣ Szabadesés: ${firstFall.freefall.startTime.toFixed(2)}s → ${firstFall.freefall.duration.toFixed(2)}s időtartam`);
+      console.log(`   3️⃣ Becsapódás: ${firstFall.impact.time.toFixed(2)}s → ${(firstFall.impact.peakValue / 9.81).toFixed(1)}g erő`);
+      console.log(`\n⏱️ Teljes időtartam: ${firstFall.totalDuration.toFixed(2)}s`);
+      console.log(`📨 Discord értesítés elküldve a csatornára`);
+      console.log('═'.repeat(60) + '\n');
     }
 
     return fallDetected;
