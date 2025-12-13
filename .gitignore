@@ -5,3 +5,4 @@ mongodb
 dataVizualization
 FallDetectionResults/
 .env
+server/test-cases

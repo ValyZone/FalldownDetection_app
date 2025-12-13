@@ -30,9 +30,9 @@ export const FALL_DETECTION_THRESHOLDS = {
   /**
    * Phase 3: Ground Impact Detection
    * Detects the sudden spike in acceleration when hitting the ground
-   * Threshold: 25 m/s² (approximately 2.55g)
+   * Threshold: 14.22 m/s² (approximately 1.45g)
    */
-  IMPACT_THRESHOLD: 25.0, // m/s²
+  IMPACT_THRESHOLD: 14.22, // m/s²
 
   /**
    * Time Windows for Phase Validation

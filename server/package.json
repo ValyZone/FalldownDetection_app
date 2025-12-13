@@ -8,7 +8,8 @@
     "start": "nodemon src/index.js",
     "start:prod": "node src/index.js",
     "test": "node test-runner.js",
-    "test:manual": "node manual-test.js"
+    "test:manual": "node manual-test.js",
+    "test:normalized": "node scripts/run_normalized_tests.js"
   },
   "keywords": ["fall-detection", "accelerometer", "discord-bot"],
   "author": "",
