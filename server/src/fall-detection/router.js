@@ -3,10 +3,7 @@ import fs from 'node:fs/promises'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import detectFall from './index.js'
-import { startBot, sendMessage } from '../discord/bot.js'
-
-// Initialize Discord bot for user status notifications
-const discord = startBot()
+import { sendMessage } from '../discord/bot.js'
 
 // Configuration for automatic cleanup
 const CLEANUP_CONFIG = {
@@ -110,7 +107,7 @@ async function cleanupOldFiles(resultsDir) {
     }
 }
 
-export default function CreateFallDetectionRouter() {
+export default function CreateFallDetectionRouter(discord) {
     const router = express.Router()
 
     // Endpoint to receive CSV data from mobile app and save it
@@ -187,7 +184,7 @@ export default function CreateFallDetectionRouter() {
             // Analyze the data for fall detection
             let fallDetectionResult = null;
             try {
-                fallDetectionResult = await detectFall(filePath);
+                fallDetectionResult = await detectFall(filePath, discord);
                 console.log(`🔍 Fall detection analysis complete: ${fallDetectionResult ? 'FALL DETECTED' : 'No fall detected'}`);
             } catch (analysisError) {
                 console.error('⚠️ Fall detection analysis failed:', analysisError);
@@ -224,9 +221,9 @@ export default function CreateFallDetectionRouter() {
             } catch {
                 return res.status(404).json({ error: "File not found" });
             }
-            
-            const result = await detectFall(filePath);
-            
+
+            const result = await detectFall(filePath, discord);
+
             res.status(200).json({
                 message: "Analysis complete",
                 filePath: filePath,
@@ -293,27 +290,6 @@ export default function CreateFallDetectionRouter() {
             });
         } catch (error) {
             console.error('❌ Error during cleanup:', error);
-            res.status(500).json({ error: error.message });
-        }
-    });
-
-    // Endpoint for user to confirm they are fine
-    router.post('/user-fine', async (req, res) => {
-        console.log('✅ User confirmed they are fine');
-
-        try {
-            const message = `✅ **User is Fine** ✅\n\n` +
-                          `⏰ ${new Date().toLocaleString('hu-HU')}\n\n` +
-                          `👤 The user has confirmed they are okay and doing well.`;
-
-            await sendMessage(discord, message);
-
-            res.status(200).json({
-                success: true,
-                message: "User fine notification sent to Discord"
-            });
-        } catch (error) {
-            console.error('❌ Error sending user fine notification:', error);
             res.status(500).json({ error: error.message });
         }
     });

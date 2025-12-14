@@ -4,10 +4,14 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFile } from 'node:fs/promises'
 import detectFall from './fall-detection/index.js'
+import { startBot, sendMessage } from './discord/bot.js'
 
 export function CreateApp() {
     const app = express()
     const __dirname = dirname(fileURLToPath(import.meta.url))
+
+    // Initialize Discord bot for notifications
+    const discord = startBot()
 
     // Middleware
     app.use(express.json())
@@ -43,7 +47,7 @@ export function CreateApp() {
     app.get('/analyzeData', async (req, res, next) => {
         try {
             const testFilePath = join(__dirname, '../../Docs/pls.csv')
-            const result = await detectFall(testFilePath)
+            const result = await detectFall(testFilePath, discord)
             res.status(200).json({ result })
         } catch (error) {
             console.error('Error analyzing test data:', error)
@@ -76,8 +80,29 @@ export function CreateApp() {
         }
     })
 
+    // User confirmation endpoint
+    app.post('/user-fine', async (req, res, next) => {
+        console.log('✅ User confirmed they are fine')
+
+        try {
+            const message = `✅ **User is Fine** ✅\n\n` +
+                          `⏰ ${new Date().toLocaleString('hu-HU')}\n\n` +
+                          `👤 The user has confirmed they are okay and doing well.`
+
+            await sendMessage(discord, message)
+
+            res.status(200).json({
+                success: true,
+                message: "User fine notification sent to Discord"
+            })
+        } catch (error) {
+            console.error('❌ Error sending user fine notification:', error)
+            next(error)
+        }
+    })
+
     // Fall Detection API
-    app.use('/fall-detection', CreateFallDetectionRouter())
+    app.use('/fall-detection', CreateFallDetectionRouter(discord))
 
     // Error handler (must be last)
     app.use((err, req, res, next) => {

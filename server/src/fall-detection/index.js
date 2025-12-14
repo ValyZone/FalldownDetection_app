@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { startBot, sendMessage } from '../discord/bot.js';
+import { sendMessage } from '../discord/bot.js';
 import {
   FALL_DETECTION_THRESHOLDS,
   EVENT_TYPES,
@@ -14,9 +14,6 @@ import {
   withinTimeWindow,
   calculateRateOfChange,
 } from './utils.js';
-
-// Initialize Discord bot
-const discord = startBot();
 
 /**
  * Formats a timestamp as [minutes:seconds:milliseconds]
@@ -339,9 +336,10 @@ function validateFallSequence(decelerationEvents, freefallEvents, impactEvents) 
 /**
  * Main fall detection function implementing three-phase motorcycle fall detection
  * @param {string} filePath - Path to the input CSV file
+ * @param {Object} discord - Discord bot instance for sending notifications
  * @returns {boolean} - True if a fall was detected, false otherwise
  */
-function detectFall(filePath) {
+function detectFall(filePath, discord) {
   try {
     // Parse accelerometer data
     const dataPoints = parseAccelerometerData(filePath);
@@ -518,9 +516,12 @@ function detectFall(filePath) {
         };
       }
 
-      sendMessage(discord, message).catch(error => {
-        console.error('❌ Discord értesítés küldése sikertelen:', error);
-      });
+      // Send Discord notification only if discord instance is provided
+      if (discord) {
+        sendMessage(discord, message).catch(error => {
+          console.error('❌ Discord értesítés küldése sikertelen:', error);
+        });
+      }
 
       // Enhanced console output
       console.log('\n' + '═'.repeat(60));
