@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// ANSI color codes for better output
 const colors = {
   reset: '\x1b[0m',
   bright: '\x1b[1m',
@@ -15,11 +14,9 @@ const colors = {
   cyan: '\x1b[36m',
 };
 
-// Test configuration
 const SERVER_URL = 'http://localhost:3030';
 const TEST_DATA_DIR = path.join(__dirname, 'test-data');
 
-// Test results tracking
 const results = {
   total: 0,
   passed: 0,
@@ -27,9 +24,6 @@ const results = {
   tests: [],
 };
 
-/**
- * Sends CSV data to the server
- */
 async function sendCsvData(csvContent, testName) {
   const response = await fetch(`${SERVER_URL}/fall-detection/receive-data`, {
     method: 'POST',
@@ -46,17 +40,11 @@ async function sendCsvData(csvContent, testName) {
   return await response.json();
 }
 
-/**
- * Reads a CSV file from the test-data directory
- */
 async function readTestFile(filename) {
   const filePath = path.join(TEST_DATA_DIR, filename);
   return await fs.readFile(filePath, 'utf-8');
 }
 
-/**
- * Runs a single test
- */
 async function runTest(testName, filename, expectedFall) {
   results.total++;
 
@@ -65,17 +53,11 @@ async function runTest(testName, filename, expectedFall) {
     console.log(`  File: ${filename}`);
     console.log(`  Expected: ${expectedFall ? 'Fall Detected' : 'No Fall'}`);
 
-    // Read test data
     const csvData = await readTestFile(filename);
-
-    // Send to server
     const response = await sendCsvData(csvData, testName);
-
-    // Check result
     const actualFall = response.fallDetected;
     const passed = actualFall === expectedFall;
 
-    // Record result
     const result = {
       name: testName,
       filename,
@@ -98,7 +80,6 @@ async function runTest(testName, filename, expectedFall) {
       console.log(`  Got: ${actualFall ? 'Fall' : 'No Fall'}`);
     }
 
-    // Show additional info
     if (response.filename) {
       console.log(`  Saved as: ${response.filename}`);
     }
@@ -124,9 +105,6 @@ async function runTest(testName, filename, expectedFall) {
   }
 }
 
-/**
- * Checks if server is running
- */
 async function checkServer() {
   try {
     const response = await fetch(`${SERVER_URL}/health`);
@@ -145,9 +123,6 @@ async function checkServer() {
   return false;
 }
 
-/**
- * Prints test summary
- */
 function printSummary() {
   console.log('\n' + '='.repeat(60));
   console.log(`${colors.bright}TEST SUMMARY${colors.reset}`);
@@ -163,7 +138,6 @@ function printSummary() {
 
   console.log(`Pass Rate: ${passRate}%`);
 
-  // List failed tests
   if (results.failed > 0) {
     console.log(`\n${colors.red}Failed Tests:${colors.reset}`);
     results.tests
@@ -181,13 +155,9 @@ function printSummary() {
 
   console.log('\n' + '='.repeat(60));
 
-  // Exit with appropriate code
   process.exit(results.failed > 0 ? 1 : 0);
 }
 
-/**
- * Main test runner
- */
 async function main() {
   console.log(`${colors.bright}${colors.blue}`);
   console.log('╔════════════════════════════════════════════════════════╗');
@@ -195,7 +165,6 @@ async function main() {
   console.log('╚════════════════════════════════════════════════════════╝');
   console.log(colors.reset);
 
-  // Check if server is running
   console.log('\nChecking server status...');
   const serverRunning = await checkServer();
 
@@ -208,7 +177,6 @@ async function main() {
   console.log('Running Fall Detection Tests');
   console.log('='.repeat(60));
 
-  // Run tests
   await runTest(
     'No Fall - Normal Walking',
     'no-fall-walking.csv',
@@ -227,11 +195,9 @@ async function main() {
     true
   );
 
-  // Print summary
   printSummary();
 }
 
-// Run tests
 main().catch((error) => {
   console.error(`\n${colors.red}Fatal Error:${colors.reset}`, error);
   process.exit(1);

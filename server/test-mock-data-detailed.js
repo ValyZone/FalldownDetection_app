@@ -6,11 +6,10 @@ import { calculateRateOfChange, meetsMinimumDuration, withinTimeWindow } from '.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Simplified version of the parseAccelerometerData function
 function parseAccelerometerData(filePath) {
   const data = fs.readFileSync(filePath, 'utf-8');
   const rows = data.split('\n');
-  rows.shift(); // Skip header
+  rows.shift();
 
   const dataPoints = [];
   for (const row of rows) {
@@ -30,7 +29,6 @@ function parseAccelerometerData(filePath) {
   return dataPoints;
 }
 
-// Simplified detectDecelerationPhase for debugging
 function detectDecelerationPhase(dataPoints) {
   const decelerationEvents = [];
 
@@ -46,7 +44,6 @@ function detectDecelerationPhase(dataPoints) {
 
     const yRate = calculateRateOfChange(previous.y, current.y, timeDiff);
 
-    // Check around the expected deceleration time (8.0s - 8.3s)
     if (current.time >= 7.9 && current.time <= 8.4 && i % 5 === 0) {
       console.log(`  Time ${current.time.toFixed(2)}s: y=${current.y.toFixed(2)}, rate=${yRate.toFixed(2)} m/s²`);
     }
