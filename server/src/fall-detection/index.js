@@ -224,10 +224,7 @@ function detectImpactPhase(dataPoints, strictMode = true) {
   for (let i = 0; i < dataPoints.length; i++) {
     const point = dataPoints[i];
 
-    // Check if absolute acceleration exceeds impact threshold
     if (point.absolute > FALL_DETECTION_THRESHOLDS.IMPACT_THRESHOLD) {
-      // In strict mode, verify it's a peak (local maximum)
-      // In relaxed mode (for low-speed falls), accept any threshold exceedance
       if (!strictMode || detectPeak(
         dataPoints.map(p => ({ time: p.time, value: p.absolute })),
         i,
@@ -248,19 +245,12 @@ function detectImpactPhase(dataPoints, strictMode = true) {
   return impactEvents;
 }
 
-/**
- * Check for stillness after impact (indicates motorcycle at rest after fall)
- * @param {Array} dataPoints - All accelerometer data points
- * @param {number} impactTime - Time of the impact event
- * @returns {boolean} - True if stillness is detected after allowing for sliding
- */
 function detectPostImpactStillness(dataPoints, impactTime) {
-  const SLIDING_WINDOW = 2.0; // Allow 2 seconds for sliding/tumbling after impact
-  const STILLNESS_WINDOW = 1.5; // Then check for 1.5 seconds of stillness
-  const STILLNESS_THRESHOLD = 9.5; // ~0.97g - device at odd angle after fall (balanced)
-  const STILLNESS_VARIANCE_THRESHOLD = 1.5; // Low variance required (balanced)
+  const SLIDING_WINDOW = 2.0;
+  const STILLNESS_WINDOW = 1.5;
+  const STILLNESS_THRESHOLD = 9.5;
+  const STILLNESS_VARIANCE_THRESHOLD = 1.5;
   
-  // Find data points in the stillness check window (after sliding period)
   const stillnessCheckStart = impactTime + SLIDING_WINDOW;
   const stillnessCheckEnd = stillnessCheckStart + STILLNESS_WINDOW;
   
@@ -269,15 +259,12 @@ function detectPostImpactStillness(dataPoints, impactTime) {
   );
   
   if (stillnessPoints.length < 10) {
-    // Not enough data points to assess stillness
     console.log(`    Stillness check: Not enough data (${stillnessPoints.length} points after ${stillnessCheckStart.toFixed(2)}s)`);
     return false;
   }
   
-  // Check if acceleration values are consistently near gravity (1g = 9.81 m/s²)
   const avgAccel = stillnessPoints.reduce((sum, p) => sum + p.absolute, 0) / stillnessPoints.length;
   
-  // Calculate variance to ensure consistent values (not fluctuating)
   const variance = stillnessPoints.reduce((sum, p) => {
     const diff = p.absolute - avgAccel;
     return sum + (diff * diff);
@@ -290,34 +277,22 @@ function detectPostImpactStillness(dataPoints, impactTime) {
   return isStill;
 }
 
-/**
- * Validate three-phase fall sequence
- * Checks if deceleration → freefall → impact occur in sequence within time windows
- * @param {Array} decelerationEvents
- * @param {Array} freefallEvents
- * @param {Array} impactEvents
- * @returns {Array<{deceleration: object, freefall: object, impact: object, totalDuration: number}>}
- */
 function validateFallSequence(decelerationEvents, freefallEvents, impactEvents) {
   const validFalls = [];
 
-  // Check each deceleration event
   for (const decel of decelerationEvents) {
-    // Find freefall events that occur after deceleration within time window
     const matchingFreefalls = freefallEvents.filter(ff =>
       ff.startTime >= decel.startTime &&
       withinTimeWindow(decel.endTime, ff.startTime)
     );
 
     for (const freefall of matchingFreefalls) {
-      // Find impact events that occur after freefall within time window
       const matchingImpacts = impactEvents.filter(imp =>
         imp.time >= freefall.startTime &&
         withinTimeWindow(freefall.endTime, imp.time)
       );
 
       for (const impact of matchingImpacts) {
-        // Valid three-phase fall detected!
         const totalDuration = impact.time - decel.startTime;
 
         validFalls.push({
@@ -333,15 +308,8 @@ function validateFallSequence(decelerationEvents, freefallEvents, impactEvents) 
   return validFalls;
 }
 
-/**
- * Main fall detection function implementing three-phase motorcycle fall detection
- * @param {string} filePath - Path to the input CSV file
- * @param {Object} discord - Discord bot instance for sending notifications
- * @returns {boolean} - True if a fall was detected, false otherwise
- */
 function detectFall(filePath, discord) {
   try {
-    // Parse accelerometer data
     const dataPoints = parseAccelerometerData(filePath);
 
     if (dataPoints.length === 0) {
@@ -365,19 +333,16 @@ function detectFall(filePath, discord) {
     const validFalls = validateFallSequence(decelerationEvents, freefallEvents, impactEvents);
     console.log(`Validated ${validFalls.length} three-phase falls`);
     
-    // Simplified fall detection: if no three-phase fall detected, check for impact-only falls
-    // This detects low-speed tip-overs that don't have the full crash sequence
+    // if no three-phase fall detected, check for impact-only falls
     let fallDetected = validFalls.length > 0;
     let detectionMode = 'three-phase';
     
     if (!fallDetected) {
       console.log(`  No three-phase fall detected, trying relaxed mode...`);
-      // Try relaxed detection mode - accept any impact above threshold WITH post-impact stillness
       const relaxedImpactEvents = detectImpactPhase(dataPoints, false);
       console.log(`  Relaxed mode: Detected ${relaxedImpactEvents.length} impact events`);
       
       if (relaxedImpactEvents.length > 0) {
-        // Filter impacts that have post-impact stillness (indicating motorcycle at rest after fall)
         console.log(`  Checking ${relaxedImpactEvents.length} impacts for post-impact stillness...`);
         const impactsWithStillness = relaxedImpactEvents.filter(impact => {
           console.log(`  Checking impact at ${impact.time.toFixed(2)}s with peak ${impact.peakValue.toFixed(2)} m/s²`);
@@ -406,7 +371,6 @@ function detectFall(filePath, discord) {
       console.log(`  Valid fall sequences found: ${validFalls.length}`);
     }
 
-    // Prepare result object
     const result = {
       fallDetected,
       detectionMode,  // 'three-phase' or 'impact-only'
@@ -434,47 +398,41 @@ function detectFall(filePath, discord) {
       } : null,
     };
 
-    // Create output directory
+    //output directory
     const outputDir = path.join(process.cwd(), 'FallDetectionResults');
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir);
     }
 
-    // Generate timestamp for file naming
+    //file naming
     const now = new Date();
     const timestamp = formatTimestamp(now);
-
-    // Save JSON result
     const outputFileName = path.join(outputDir, `${now.toISOString().replace(/[:.]/g, '-')}.json`);
     fs.writeFileSync(outputFileName, JSON.stringify(result, null, 2));
 
-    // Export all accelerometer values to CSV
     const valuesCSV = ['Time (s),Acceleration x (m/s^2),Acceleration y (m/s^2),Acceleration z (m/s^2),Absolute acceleration (m/s^2)'];
     dataPoints.forEach(point => {
       valuesCSV.push(`${point.time},${point.x},${point.y},${point.z},${point.absolute}`);
     });
     const valuesFileName = path.join(outputDir, `${timestamp}-values.csv`);
     fs.writeFileSync(valuesFileName, valuesCSV.join('\n'));
-
-    // Export detailed events to CSV
     const eventsCSV = ['Event Type,Start Time (s),End Time (s),Duration (s),Peak/Min Value,Axis,Additional Data'];
 
-    // Add deceleration events
+    //deceleration
     decelerationEvents.forEach(event => {
       eventsCSV.push(`${EVENT_TYPES.DECELERATION},${event.startTime},${event.endTime},${event.duration},${event.peakValue},${event.axis},`);
     });
 
-    // Add freefall events
+    //freefall
     freefallEvents.forEach(event => {
       eventsCSV.push(`${EVENT_TYPES.FREEFALL},${event.startTime},${event.endTime},${event.duration},${event.minValue},,`);
     });
 
-    // Add impact events
+    //impact events
     impactEvents.forEach(event => {
       eventsCSV.push(`${EVENT_TYPES.IMPACT},${event.time},${event.time},0,${event.peakValue},,x=${event.x} y=${event.y} z=${event.z}`);
     });
 
-    // Add validated fall sequences
     validFalls.forEach((fall, index) => {
       eventsCSV.push(`${EVENT_TYPES.FALL_DETECTED},${fall.deceleration.startTime},${fall.impact.time},${fall.totalDuration},${fall.impact.peakValue},,Fall #${index + 1}`);
     });
@@ -482,12 +440,11 @@ function detectFall(filePath, discord) {
     const eventsFileName = path.join(outputDir, `${timestamp}-events.csv`);
     fs.writeFileSync(eventsFileName, eventsCSV.join('\n'));
 
-    // Send Discord notification if fall is detected
+    //Discord notification
     if (fallDetected) {
       let message, logDetails;
       
       if (validFalls.length > 0) {
-        // Three-phase fall detected
         const firstFall = validFalls[0];
         message = `🚨 **ESÉS ÉRZÉKELVE** 🚨\n\n` +
                       `⏰ ${new Date().toLocaleString('hu-HU')}\n\n` +
@@ -501,7 +458,6 @@ function detectFall(filePath, discord) {
           duration: firstFall.totalDuration.toFixed(2)
         };
       } else {
-        // Impact-only fall detected (low-speed tip-over)
         const relaxedImpacts = detectImpactPhase(dataPoints, false);
         const maxImpact = relaxedImpacts.reduce((max, curr) => curr.peakValue > max.peakValue ? curr : max, relaxedImpacts[0]);
         
@@ -515,15 +471,11 @@ function detectFall(filePath, discord) {
           note: 'Lassú borulás vagy csúszás észlelve'
         };
       }
-
-      // Send Discord notification only if discord instance is provided
       if (discord) {
         sendMessage(discord, message).catch(error => {
           console.error('❌ Discord értesítés küldése sikertelen:', error);
         });
       }
-
-      // Enhanced console output
       console.log('\n' + '═'.repeat(60));
       console.log('🚨 ESÉS ÉRZÉKELVE - DISCORD RIASZTÁS KÜLDÉSE');
       console.log('═'.repeat(60));

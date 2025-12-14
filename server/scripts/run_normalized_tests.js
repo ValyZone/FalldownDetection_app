@@ -6,13 +6,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER_URL = process.env.FALL_SERVER_URL ?? 'http://localhost:3030';
 const NORMALIZED_ROOT = path.join(__dirname, '..', 'test-cases', 'normalized');
 const CHUNK_ROOT = path.join(__dirname, '..', 'test-cases', 'normalized_chunks');
-const MAX_LINES_PER_REQUEST = 1200; // header + up to 1199 samples per HTTP call
-const IMPACT_THRESHOLD = 14.22; // m/s² (1.45g) - same as in constants.js
+const MAX_LINES_PER_REQUEST = 1200;
+const IMPACT_THRESHOLD = 14.22;
 
-// Expectations based on directory structure
 const fallExpectations = {
-  'fall': true,      // test-cases/fall/** should detect falls
-  'no_fall': false,  // test-cases/no_fall/** should NOT detect falls
+  'fall': true,
+  'no_fall': false,
 };
 
 const colors = {
@@ -31,11 +30,10 @@ async function ensureChunkDir(dirPath) {
 }
 
 function getChunkPeakAcceleration(chunkLines) {
-  // Skip header, find max absolute acceleration (column 5)
   let maxAccel = 0;
   for (let i = 1; i < chunkLines.length; i++) {
     const values = chunkLines[i].split('\t');
-    const absAccel = parseFloat(values[4]); // Absolute acceleration column
+    const absAccel = parseFloat(values[4]);
     if (!isNaN(absAccel) && absAccel > maxAccel) {
       maxAccel = absAccel;
     }
@@ -63,12 +61,11 @@ async function chunkFileIfNeeded(filePath, relativeDir, expectFall) {
     const chunkData = data.slice(index, index + (MAX_LINES_PER_REQUEST - 1));
     const chunkLines = [header, ...chunkData];
     
-    // For fall scenarios, only keep chunks with peaks above threshold
     if (expectFall) {
       const peakAccel = getChunkPeakAcceleration(chunkLines);
       if (peakAccel < IMPACT_THRESHOLD) {
         skippedChunks++;
-        continue; // Skip this chunk - no significant impact
+        continue;
       }
     }
     

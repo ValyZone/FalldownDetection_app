@@ -14,4 +14,4 @@ for scenario in os.listdir(fall_dir):
                 peak_svm = df['Absolute acceleration (m/s^2)'].max()
                 peak_g = peak_svm / 9.81
                 print(f"{scenario}: Peak = {peak_svm:.2f} m/s² ({peak_g:.2f}g)")
-                break  # Only check one file per scenario
+                break

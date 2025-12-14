@@ -57,7 +57,6 @@ def _normalize_file(source_path: Path, output_root: Path) -> None:
         reader = csv.reader(handle, delimiter="\t")
         for index, row in enumerate(reader):
             if index == 0:
-                # Skip header
                 continue
 
             if not row:

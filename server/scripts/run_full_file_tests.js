@@ -23,9 +23,8 @@ async function gatherFiles() {
   const categories = await fs.readdir(NORMALIZED_ROOT, { withFileTypes: true });
   const testCases = [];
 
-  // Exclude gentle falls below detection threshold (not life-threatening)
   const excludedScenarios = [
-    'Fall on a slippery straight road section', // Peak 1.20g < 1.45g threshold
+    'Fall on a slippery straight road section',
   ];
 
   for (const category of categories) {
@@ -39,7 +38,6 @@ async function gatherFiles() {
     for (const scenario of scenarios) {
       if (!scenario.isDirectory()) continue;
 
-      // Skip excluded scenarios
       if (excludedScenarios.includes(scenario.name)) {
         console.log(`  ${colors.cyan}Skipping "${scenario.name}" (below detection threshold)${colors.reset}`);
         continue;
@@ -75,7 +73,6 @@ async function runTests() {
     const testCase = testCases[i];
     const testNum = i + 1;
 
-    // Suppress console output during detection
     const originalLog = console.log;
     console.log = () => {};
     

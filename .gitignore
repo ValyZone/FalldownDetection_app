@@ -6,3 +6,4 @@ dataVizualization
 FallDetectionResults/
 .env
 server/test-cases
+server/test-data
