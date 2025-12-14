@@ -12,7 +12,7 @@ import { FALL_DETECTION_THRESHOLDS } from './constants.js';
  * @param {number[]} values - Array of numerical values
  * @returns {number} Mean value
  */
-export function calculateMean(values) {
+function calculateMean(values) {
   if (!values || values.length === 0) return 0;
   const sum = values.reduce((acc, val) => acc + val, 0);
   return sum / values.length;
@@ -24,7 +24,7 @@ export function calculateMean(values) {
  * @param {number} [mean] - Pre-calculated mean (optional, will be calculated if not provided)
  * @returns {number} Variance value
  */
-export function calculateVariance(values, mean = null) {
+function calculateVariance(values, mean = null) {
   if (!values || values.length === 0) return 0;
   const avg = mean !== null ? mean : calculateMean(values);
   const squaredDiffs = values.map((val) => Math.pow(val - avg, 2));
@@ -36,7 +36,7 @@ export function calculateVariance(values, mean = null) {
  * @param {number[]} values - Array of numerical values
  * @returns {number} Standard deviation
  */
-export function calculateStdDev(values) {
+function calculateStdDev(values) {
   return Math.sqrt(calculateVariance(values));
 }
 
@@ -45,7 +45,7 @@ export function calculateStdDev(values) {
  * @param {number[]} values - Array of numerical values
  * @returns {number} Maximum value
  */
-export function findMax(values) {
+function findMax(values) {
   if (!values || values.length === 0) return 0;
   return Math.max(...values);
 }
@@ -55,7 +55,7 @@ export function findMax(values) {
  * @param {number[]} values - Array of numerical values
  * @returns {number} Minimum value
  */
-export function findMin(values) {
+function findMin(values) {
   if (!values || values.length === 0) return 0;
   return Math.min(...values);
 }
@@ -67,7 +67,7 @@ export function findMin(values) {
  * @param {number} windowSize - Size of the rolling window in seconds
  * @returns {Array<{time: number, value: number}>} Data points within the window
  */
-export function getRollingWindow(dataPoints, currentIndex, windowSize = FALL_DETECTION_THRESHOLDS.ROLLING_WINDOW_SIZE) {
+function getRollingWindow(dataPoints, currentIndex, windowSize = FALL_DETECTION_THRESHOLDS.ROLLING_WINDOW_SIZE) {
   const currentTime = dataPoints[currentIndex].time;
   const windowStart = currentTime - windowSize;
 
@@ -192,16 +192,6 @@ export function withinTimeWindow(firstEventTime, secondEventTime) {
   return timeDiff <= FALL_DETECTION_THRESHOLDS.MAX_TIME_BETWEEN_PHASES;
 }
 
-/**
- * Calculate the magnitude of a 3D vector
- * @param {number} x - X component
- * @param {number} y - Y component
- * @param {number} z - Z component
- * @returns {number} Magnitude
- */
-export function calculateMagnitude(x, y, z) {
-  return Math.sqrt(x * x + y * y + z * z);
-}
 
 /**
  * Calculate the rate of change (derivative) between two consecutive data points
@@ -215,22 +205,3 @@ export function calculateRateOfChange(value1, value2, timeDiff) {
   return (value2 - value1) / timeDiff;
 }
 
-/**
- * Apply a simple moving average filter to smooth data
- * @param {number[]} values - Array of values
- * @param {number} windowSize - Number of points to average
- * @returns {number[]} Smoothed values
- */
-export function applyMovingAverageFilter(values, windowSize = 3) {
-  if (values.length < windowSize) return values;
-
-  const smoothed = [];
-  for (let i = 0; i < values.length; i++) {
-    const start = Math.max(0, i - Math.floor(windowSize / 2));
-    const end = Math.min(values.length, i + Math.ceil(windowSize / 2));
-    const window = values.slice(start, end);
-    smoothed.push(calculateMean(window));
-  }
-
-  return smoothed;
-}

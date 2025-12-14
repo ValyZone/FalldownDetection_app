@@ -283,3 +283,75 @@ Check the server console logs to diagnose which issue is occurring.
 ================================================================================
 END OF SESSION SUMMARY
 ================================================================================
+
+================================================================================
+UPDATE: December 13, 2025 - Testing Results with Full Files
+================================================================================
+
+CONFIRMED: The chunking hypothesis was correct!
+
+TEST RESULTS - CHUNKED FILES (run_normalized_tests.js):
+- Total: 715 chunks
+- Passed: 703
+- Failed: 12 (all fall scenarios)
+- Issue: Chunks end before post-impact stillness can be observed
+
+TEST RESULTS - FULL FILES (run_full_file_tests.js):  
+- Total: 11 files
+- Passed: 3
+- Failed: 8
+
+BREAKDOWN:
+✓ Fall scenarios (3/4 passing):
+  - ✓ Fall in a curve
+  - ✓ Fall in the roundabout  
+  - ✗ Fall on slippery (peak 1.20g < 1.45g threshold - expected failure)
+  - ✓ Fall with leaning
+
+✗ No-fall scenarios (0/7 passing - ALL FALSE POSITIVES!):
+  - ✗ Acceleration On Curve
+  - ✗ Acceleration On Straight Line
+  - ✗ Fall Like manoeuvre 1, 2, 3
+  - ✗ Harsh breaking On Straight Line
+  - ✗ Much degraded track
+
+ROOT CAUSE IDENTIFIED:
+The post-impact stillness check is TOO LENIENT. It cannot distinguish between:
+1. Real fall stillness (device lying on ground after crash)
+2. Normal stop stillness (motorcycle at traffic light, red light, etc.)
+
+Both scenarios have:
+- Impacts > 1.45g (rough roads ~1.6g, harsh braking ~1.5g)
+- Periods of stillness (avg ~12 m/s², low variance)
+
+CURRENT STILLNESS PARAMETERS (index.js:261-264):
+  STILLNESS_THRESHOLD = 12.0 m/s² (~1.22g)
+  STILLNESS_VARIANCE_THRESHOLD = 3.0
+  STILLNESS_WINDOW = 1.5 seconds
+  SLIDING_WINDOW = 2.0 seconds
+
+PROPOSED SOLUTIONS:
+
+Option 1: TIGHTEN STILLNESS THRESHOLDS
+- Lower STILLNESS_THRESHOLD to 8.0 m/s² (~0.8g)
+  * Real fall: device at odd angle, accel < 0.8g
+  * Traffic stop: upright bike, accel ~1.0g vertical
+- Lower VARIANCE_THRESHOLD to 1.0
+  * Requires more consistent stillness
+
+Option 2: ADD ORIENTATION CHECK
+- After impact, check if device orientation changed significantly
+- Real fall: orientation changes (upright → sideways)
+- Traffic stop: orientation stays upright
+- Requires gyroscope data analysis
+
+Option 3: COMBINE BOTH
+- Use stricter thresholds AND orientation check
+- Most robust solution
+
+NEXT STEPS:
+1. Try Option 1 first (easiest to test)
+2. Run full-file tests to verify
+3. If still false positives, add Option 2
+
+================================================================================
