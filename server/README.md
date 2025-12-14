@@ -1,74 +1,95 @@
 # Fall Detection Server
 
-Simplified Node.js/Express server for the Fall Detection System. Processes accelerometer data from mobile apps, detects falls, and sends emergency notifications via Discord.
+Node.js/Express server that analyzes accelerometer data to detect motorcycle crashes using a sophisticated 3-phase detection algorithm.
 
-## Features
+## How It Works
 
-- **Fall detection algorithm** using accelerometer data (X, Y, Z axes)
-- **RESTful API** for mobile app integration
-- **Discord notifications** for detected falls
-- **CSV file storage** of accelerometer data
-- **No database required** - all data stored as files
+The server uses a **research-based 3-phase detection algorithm**:
 
-## Prerequisites
+```
+Phase 1: DECELERATION
+└─ Detects sudden negative acceleration (< -15 m/s²)
+   └─ Indicates motorcycle losing speed rapidly
 
+Phase 2: FREEFALL
+└─ Detects near-weightlessness (< 2.0 m/s²)
+   └─ Indicates rider/bike airborne
+
+Phase 3: IMPACT
+└─ Detects spike in acceleration (> 14.22 m/s²)
+   └─ Indicates ground impact
+
+VALIDATION
+└─ All 3 phases must occur in sequence within 2 seconds
+   └─ If yes → CRASH DETECTED
+   └─ If no → Check for low-speed tip-over (impact + stillness)
+```
+
+### Algorithm Features
+
+- **Sequential Validation:** Phases must occur in order
+- **Time Windows:** Max 2 seconds between phases
+- **Minimum Duration:** Events must last ≥ 200ms to filter noise
+- **Fallback Detection:** Low-speed crashes (impact + post-impact stillness)
+- **Post-Impact Analysis:** Checks for device stillness after impact
+
+### Thresholds
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| Deceleration | -15 m/s² | Sudden braking/crash |
+| Freefall | 2.0 m/s² | Near-weightlessness |
+| Impact | 14.22 m/s² (1.45g) | Ground collision |
+| Time Window | 2.0 seconds | Phase sequence limit |
+| Min Duration | 0.2 seconds | Noise filtering |
+
+## Setup
+
+### Prerequisites
 - Node.js (ES Modules support)
-- Discord bot token (for notifications)
+- Discord bot token
 
-## Installation
+### Installation
 
 1. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Configure environment variables:**
+2. **Configure environment:**
 
-   Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit `.env` and add your Discord configuration:
+   Create `.env` file:
    ```env
    DISCORD_TOKEN=your_discord_bot_token_here
-   DISCORD_CHANNEL_ID=your_discord_channel_id_here
+   DISCORD_CHANNEL_ID=your_channel_id_here
+   PORT=3030
    ```
 
-## Running the Server
+3. **Run server:**
+   ```bash
+   npm start              # Development (with auto-restart)
+   npm run start:prod     # Production
+   ```
 
-### Development Mode (with auto-restart)
-```bash
-npm start
-```
-
-### Production Mode
-```bash
-npm run start:prod
-```
-
-The server will start on `http://0.0.0.0:3030`
+Server runs on `http://0.0.0.0:3030`
 
 ## API Endpoints
 
-### Fall Detection
-
-#### POST `/fall-detection/receive-data`
-Receives accelerometer CSV data from mobile app and analyzes for falls.
+### POST /fall-detection/receive-data
+Receives CSV data from mobile app and analyzes for crashes.
 
 **Content-Type:** `text/csv` OR `application/json`
 
-**Request Body (CSV):**
+**Request (CSV):**
 ```csv
-"Time (s)","Acceleration x (m/s^2)","Acceleration y (m/s^2)","Acceleration z (m/s^2)","Absolute acceleration (m/s^2)"
-0.0,0.50,1.23,9.81,9.95
-0.1,0.52,1.25,9.80,9.94
+"Time (s)","Acceleration x","Acceleration y","Acceleration z","Absolute acceleration","Gyroscope x","Gyroscope y","Gyroscope z","Gyroscope magnitude"
+0.0,0.5,1.2,9.8,9.9,0.01,-0.03,0.01,0.03
 ```
 
-**Request Body (JSON):**
+**Request (JSON):**
 ```json
 {
-  "csvData": "CSV content as string..."
+  "csvData": "CSV string..."
 }
 ```
 
@@ -76,15 +97,15 @@ Receives accelerometer CSV data from mobile app and analyzes for falls.
 ```json
 {
   "message": "CSV data saved and analyzed successfully",
-  "filename": "acceleration-data-2025-11-30T14-30-00-123Z.csv",
-  "timestamp": "2025-11-30T14:30:00.123Z",
+  "filename": "acceleration-data-2025-12-14T10-30-00-000Z.csv",
+  "timestamp": "2025-12-14T10:30:00.000Z",
   "dataLength": 1234,
   "fallDetected": true
 }
 ```
 
-#### POST `/fall-detection/analyze`
-Analyzes an existing CSV file for fall detection.
+### POST /fall-detection/analyze
+Analyzes existing CSV file.
 
 **Request:**
 ```json
@@ -93,192 +114,174 @@ Analyzes an existing CSV file for fall detection.
 }
 ```
 
-**Response:**
-```json
-{
-  "message": "Analysis complete",
-  "filePath": "path/to/file.csv",
-  "fallDetected": true,
-  "timestamp": "2025-11-30T14:30:00.123Z"
-}
-```
-
-#### GET `/fall-detection/files`
+### GET /fall-detection/files
 Lists all saved data files.
 
 **Response:**
 ```json
 {
-  "message": "Files retrieved successfully",
-  "csvFiles": ["file1.csv", "file2.csv"],
-  "jsonFiles": ["result1.json", "result2.json"],
-  "totalFiles": 4
+  "csvFiles": ["file1.csv"],
+  "jsonFiles": ["result1.json"],
+  "totalFiles": 2
 }
 ```
 
-### Utility Endpoints
+### POST /fall-detection/cleanup
+Triggers automatic file cleanup (deletes oldest files if limits exceeded).
 
-#### GET `/health`
+### POST /user-fine
+User confirms they're okay (sends Discord notification).
+
+### GET /health
 Health check endpoint.
 
-**Response:**
-```json
-{
-  "status": "ok",
-  "service": "Fall Detection Server",
-  "timestamp": "2025-11-30T14:30:00.123Z"
-}
-```
+### GET /mock-data/positive
+Returns mock crash data for testing.
 
-#### GET `/`
-Landing page (renders EJS template).
+### GET /mock-data/false-positive
+Returns mock non-crash data for testing.
 
-#### GET `/analyzeData`
-Test endpoint for analyzing sample data.
+## File Storage
 
-## Fall Detection Algorithm
+Data is stored in `FallDetectionResults/`:
 
-The algorithm uses a two-phase approach:
+- **CSV files:** Raw sensor data (`acceleration-data-TIMESTAMP.csv`)
+- **JSON files:** Analysis results (`TIMESTAMP.json`)
+- **Event files:** Detected events (`TIMESTAMP-events.csv`)
 
-### Phase 1: Dominant Axis Identification
-1. Reads CSV file with accelerometer data (X, Y, Z axes)
-2. Calculates deviations from gravity (9.81 m/s²) for each axis
-3. Identifies which axis shows the least deviation (dominant axis)
-4. This represents the axis most aligned with gravity during rest
+### Automatic Cleanup
 
-### Phase 2: Fall Event Detection
-1. Monitors the dominant axis values over time
-2. Detects **"falling"** state when absolute value < 0.5 m/s²
-   - Indicates free-fall or near-weightlessness
-3. Detects **"impact"** when dominant axis value equals 0.0 m/s²
-   - Indicates the moment of ground impact
-4. Fall is confirmed only if **BOTH** conditions are met
-
-### Output
-Creates a JSON file in `FallDetectionResults/` directory:
-```json
-{
-  "fallDetected": true,
-  "dominantAxis": "Z",
-  "events": [
-    {
-      "event": "falling",
-      "timestamp": 1.2,
-      "Z": 0.3
-    },
-    {
-      "event": "impact",
-      "timestamp": 1.5,
-      "Z": 0.0
-    }
-  ]
-}
-```
+Server automatically removes old files when:
+- File count exceeds **100 files**
+- Total size exceeds **50 MB**
+- Triggered before saving new file
 
 ## Discord Notifications
 
-When a fall is detected, the system automatically sends a Discord notification:
+When crash detected, sends notification:
 
 ```
-🚨 **ESÉS ÉRZÉKELVE!** 🚨
+🚨 **ESÉS ÉRZÉKELVE** 🚨
 
-⏰ Idő: 2025-11-30 14:30:00
+⏰ 2025-12-14 10:30:00
 
-📊 Domináns Tengely: Z
-📁 Esés adatokat tartalmazó fájl neve: 2025-11-30T14-30-06-789Z.json
+⚠️ Még nem érkezett visszajelzés a felhasználótól
+```
 
-🆘 Emergency services may need to be contacted!
-------------------------------------------------------------
+Detailed crash info logged to console:
+```
+═══════════════════════════════════════════════════════
+🚨 ESÉS ÉRZÉKELVE - DISCORD RIASZTÁS KÜLDÉSE
+═══════════════════════════════════════════════════════
+⏰ Időpont: 2025-12-14 10:30:00
+📍 Helyszín: FallDetectionResults/2025-12-14T10-30-00-000Z.json
+
+📊 TÍPUS: Háromfázisú esés
+
+📊 FÁZIS BONTÁS:
+   1️⃣ Lassulás: 8.2s → -1.8g a X-tengelyen
+   2️⃣ Szabadesés: 8.5s → 0.25s időtartam
+   3️⃣ Becsapódás: 8.8s → 2.1g erő
+
+⏱️ Teljes időtartam: 0.6s
+📨 Discord értesítés elküldve a csatornára
+═══════════════════════════════════════════════════════
 ```
 
 ## Configuration
 
-All configuration is managed through environment variables in `.env`:
+Environment variables (`.env`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `3030` | Server port |
-| `HOST` | `0.0.0.0` | Server host |
-| `NODE_ENV` | `development` | Environment (development/production) |
+| `PORT` | 3030 | Server port |
+| `HOST` | 0.0.0.0 | Server host |
 | `DISCORD_TOKEN` | - | Discord bot token (required) |
-| `DISCORD_CHANNEL_ID` | - | Discord channel ID for notifications |
-| `RESULTS_DIR` | `./FallDetectionResults` | Directory for storing CSV and JSON files |
-
-See `src/config.js` for all configuration options.
+| `DISCORD_CHANNEL_ID` | - | Discord channel ID |
+| `RESULTS_DIR` | ./FallDetectionResults | Storage directory |
+| `NODE_ENV` | development | Environment mode |
 
 ## Project Structure
 
 ```
-/server
-  /src
-    /discord         - Discord bot integration
-    /fall-detection  - Fall detection algorithm and routes
-    config.js        - Centralized configuration
-    app.js           - Express app setup
-    index.js         - Server entry point
-  /views             - EJS templates
-  /FallDetectionResults - CSV files and analysis results
-  .env               - Environment variables (not in git)
-  .env.example       - Example environment configuration
-  package.json       - Dependencies and scripts
+server/
+├── src/
+│   ├── discord/
+│   │   └── bot.js               # Discord integration
+│   ├── fall-detection/
+│   │   ├── index.js             # Main detection algorithm
+│   │   ├── constants.js         # Thresholds and config
+│   │   ├── utils.js             # Helper functions
+│   │   └── router.js            # API endpoints
+│   ├── config.js                # Environment config
+│   ├── app.js                   # Express app setup
+│   └── index.js                 # Server entry point
+├── scripts/
+│   ├── run_full_file_tests.js   # Full file test runner
+│   └── run_normalized_tests.js  # Normalized test runner
+├── test-cases/                  # Test datasets
+├── views/                       # EJS templates
+├── FallDetectionResults/        # Output files
+├── .env                         # Environment variables
+└── package.json                 # Dependencies
 ```
 
-## File Storage
+## Testing
 
-All fall detection data is stored as files:
+### Run Comprehensive Tests
+```bash
+npm test                # Run full file tests
+npm run test:normalized # Run normalized tests
+```
 
-- **CSV files:** Raw accelerometer data
-  - `acceleration-data-TIMESTAMP.csv`
-- **JSON files:** Analysis results
-  - `TIMESTAMP.json`
+### Manual Testing
+```bash
+node manual-test.js     # Interactive test tool
+```
 
-Files are stored in the `FallDetectionResults/` directory.
+### Mock Data Testing
+Test with pre-generated crash/non-crash data:
+- `GET /mock-data/positive` - Should detect crash
+- `GET /mock-data/false-positive` - Should NOT detect crash
 
 ## Development
 
-The server uses **ES Modules** (`import/export` syntax).
+The server uses **ES Modules** (`import/export`).
 
-### Key Dependencies
+### Key Files
 
-- `express` - Web framework
-- `discord.js` - Discord bot integration
-- `dotenv` - Environment variable management
-- `ejs` - Template engine (for landing page)
+- **index.js** - 3-phase detection algorithm
+- **constants.js** - All thresholds and config
+- **utils.js** - Peak detection, time windows, statistics
+- **router.js** - API endpoints, file cleanup
 
-### Adding New Features
+### Adding Features
 
-1. Follow existing code patterns
-2. Add proper error handling with try-catch
-3. Use the centralized config (`src/config.js`) for environment-specific values
-4. Update this README if adding new endpoints
+1. Update `constants.js` for new thresholds
+2. Add functions to `utils.js` for reusable logic
+3. Modify `index.js` for algorithm changes
+4. Add endpoints to `router.js`
 
-## Error Handling
-
-All routes use Express error handling middleware. Errors are automatically caught and returned as JSON:
+## Dependencies
 
 ```json
 {
-  "error": "Error message here",
-  "stack": "..." // Only in development mode
+  "express": "^4.19.2",      // Web framework
+  "discord.js": "^14.17.3",  // Discord bot
+  "dotenv": "^17.2.3",       // Environment vars
+  "ejs": "^3.1.9"            // Templates
 }
 ```
 
 ## Logging
 
-The server logs all HTTP requests:
+All requests logged:
 ```
-GET /health - 200 - 5ms
 POST /fall-detection/receive-data - 200 - 234ms
+GET /health - 200 - 5ms
 ```
 
-## Removed Features
-
-**Version 2.0.0** removed the following features to simplify the server:
-- MongoDB database
-- Motorcycle management (`/moto` endpoints)
-- User management (`/user` endpoints)
-
-The server now focuses solely on **fall detection**.
+Crash analysis logged to console with detailed phase breakdown.
 
 ## License
 

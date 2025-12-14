@@ -1,2 +1,0 @@
-https://www.mongodb.com/try/download/community-kubernetes-operator
-./mongod.exe --dbpath "D:\EGYETEM\webstormRepos\MotoTime\mototime\server\mongodb-data"
