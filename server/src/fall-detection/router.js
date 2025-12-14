@@ -113,55 +113,19 @@ export default function CreateFallDetectionRouter(discord) {
                 }
             }
 
-            if (!csvContent || csvContent.trim() === '') {
-                console.log('❌ Empty CSV content received');
-                return res.status(400).json({ error: "Empty CSV data provided" });
-            }
-
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `acceleration-data-${timestamp}.csv`;
             const resultsDir = join(dirname(fileURLToPath(import.meta.url)), '../../../FallDetectionResults');
             const filePath = join(resultsDir, filename);
             await cleanupOldFiles(resultsDir);
-
-            try {
-                await fs.writeFile(filePath, csvContent, 'utf8');
-            } catch (writeError) {
-                if (writeError.code === 'ENOSPC') {
-                    const originalMaxFiles = CLEANUP_CONFIG.MAX_FILES;
-                    CLEANUP_CONFIG.MAX_FILES = 50;
-                    await cleanupOldFiles(resultsDir);
-                    CLEANUP_CONFIG.MAX_FILES = originalMaxFiles;
-
-                    try {
-                        await fs.writeFile(filePath, csvContent, 'utf8');
-                        console.log('✅ File saved after emergency cleanup');
-                    } catch (retryError) {
-                        console.error('❌ Still cannot save file after cleanup. Disk may be full.');
-                        return res.status(507).json({
-                            error: "Insufficient storage space. Please free up disk space.",
-                            code: "ENOSPC",
-                            suggestion: "Delete old files or increase disk space"
-                        });
-                    }
-                } else {
-                    throw writeError;
-                }
-            }
+            await fs.writeFile(filePath, csvContent, 'utf8');
             
             console.log(`✅ CSV file saved: ${filename}`);
-            console.log(`📁 File path: ${filePath}`);
-            
-            let fallDetectionResult = null;
-            try {
-                fallDetectionResult = await detectFall(filePath, discord);
-                console.log(`🔍 Fall detection analysis complete: ${fallDetectionResult ? 'FALL DETECTED' : 'No fall detected'}`);
-            } catch (analysisError) {
-                console.error('⚠️ Fall detection analysis failed:', analysisError);
-            }
-            
-            res.status(200).json({ 
-                message: "CSV data saved and analyzed successfully", 
+
+            const fallDetectionResult = await detectFall(filePath, discord);
+
+            res.status(200).json({
+                message: "CSV data saved and analyzed successfully",
                 filename: filename,
                 timestamp: new Date().toISOString(),
                 dataLength: csvContent.length,
@@ -175,21 +139,8 @@ export default function CreateFallDetectionRouter(discord) {
     });
 
     router.post('/analyze', async (req, res) => {
-        console.log("🔍 Fall detection analysis requested");
-        
         try {
             const { filePath } = req.body;
-            
-            if (!filePath) {
-                return res.status(400).json({ error: "File path is required" });
-            }
-            
-            try {
-                await fs.access(filePath);
-            } catch {
-                return res.status(404).json({ error: "File not found" });
-            }
-
             const result = await detectFall(filePath, discord);
 
             res.status(200).json({
@@ -198,9 +149,7 @@ export default function CreateFallDetectionRouter(discord) {
                 fallDetected: result,
                 timestamp: new Date().toISOString()
             });
-            
         } catch (error) {
-            console.error('❌ Error analyzing file:', error);
             res.status(500).json({ error: error.message });
         }
     });
@@ -208,29 +157,16 @@ export default function CreateFallDetectionRouter(discord) {
     router.get('/files', async (req, res) => {
         try {
             const resultsDir = join(dirname(fileURLToPath(import.meta.url)), '../../../FallDetectionResults');
+            const files = await fs.readdir(resultsDir);
+            const csvFiles = files.filter(file => file.endsWith('.csv'));
+            const jsonFiles = files.filter(file => file.endsWith('.json'));
 
-            try {
-                const files = await fs.readdir(resultsDir);
-                const csvFiles = files.filter(file => file.endsWith('.csv'));
-                const jsonFiles = files.filter(file => file.endsWith('.json'));
-
-                res.status(200).json({
-                    message: "Files retrieved successfully",
-                    csvFiles: csvFiles,
-                    jsonFiles: jsonFiles,
-                    totalFiles: files.length
-                });
-            } catch {
-                res.status(200).json({
-                    message: "No files found",
-                    csvFiles: [],
-                    jsonFiles: [],
-                    totalFiles: 0
-                });
-            }
-
+            res.status(200).json({
+                csvFiles,
+                jsonFiles,
+                totalFiles: files.length
+            });
         } catch (error) {
-            console.error('❌ Error retrieving files:', error);
             res.status(500).json({ error: error.message });
         }
     });
