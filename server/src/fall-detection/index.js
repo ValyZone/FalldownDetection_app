@@ -7,19 +7,12 @@ import {
   AXES
 } from './constants.js';
 import {
-  calculateRollingStats,
   detectPeak,
-  detectValley,
   meetsMinimumDuration,
   withinTimeWindow,
   calculateRateOfChange,
 } from './utils.js';
 
-/**
- * Formats a timestamp as [minutes:seconds:milliseconds]
- * @param {Date} date - The date object to format
- * @returns {string} - Formatted timestamp
- */
 function formatTimestamp(date) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
@@ -27,16 +20,10 @@ function formatTimestamp(date) {
     return `[${minutes}-${seconds}-${milliseconds}]`;
 }
 
-/**
- * Parse CSV data and extract accelerometer readings
- * @param {string} filePath - Path to the CSV file
- * @returns {Array<{time: number, x: number, y: number, z: number, absolute: number}>}
- */
 function parseAccelerometerData(filePath) {
   const data = fs.readFileSync(filePath, 'utf-8');
   const rows = data.split('\n');
 
-  // Skip header row
   rows.shift();
 
   const dataPoints = [];
@@ -44,11 +31,9 @@ function parseAccelerometerData(filePath) {
   for (const row of rows) {
     if (!row.trim()) continue;
 
-    // Handle both comma and tab separated values
     const values = row.includes('\t') ? row.split('\t') : row.split(',');
     const [timestamp, accelX, accelY, accelZ, absoluteAccel] = values.map(value => parseFloat(value.replace(/"/g, '')));
 
-    // Skip if we get NaN values
     if (isNaN(timestamp) || isNaN(accelX) || isNaN(accelY) || isNaN(accelZ)) continue;
 
     dataPoints.push({
@@ -63,12 +48,6 @@ function parseAccelerometerData(filePath) {
   return dataPoints;
 }
 
-/**
- * Detect Phase 1: Sudden Deceleration
- * Detects when the motorcycle suddenly loses speed (negative acceleration spike)
- * @param {Array} dataPoints - Accelerometer data points
- * @returns {Array<{startTime: number, endTime: number, peakValue: number, duration: number, axis: string}>}
- */
 function detectDecelerationPhase(dataPoints) {
   const decelerationEvents = [];
   let inDeceleration = false;
@@ -150,12 +129,6 @@ function detectDecelerationPhase(dataPoints) {
   return decelerationEvents;
 }
 
-/**
- * Detect Phase 2: Free-fall
- * Detects weightlessness when absolute acceleration drops below threshold
- * @param {Array} dataPoints - Accelerometer data points
- * @returns {Array<{startTime: number, endTime: number, minValue: number, duration: number}>}
- */
 function detectFreefallPhase(dataPoints) {
   const freefallEvents = [];
   let inFreefall = false;
@@ -211,13 +184,6 @@ function detectFreefallPhase(dataPoints) {
   return freefallEvents;
 }
 
-/**
- * Detect Phase 3: Ground Impact
- * Detects sudden spike in acceleration when hitting the ground
- * @param {Array} dataPoints - Accelerometer data points
- * @param {boolean} strictMode - If false, don't require local peak detection (for low-speed falls)
- * @returns {Array<{time: number, peakValue: number, x: number, y: number, z: number}>}
- */
 function detectImpactPhase(dataPoints, strictMode = true) {
   const impactEvents = [];
 
@@ -317,19 +283,15 @@ function detectFall(filePath, discord) {
       return false;
     }
 
-    // Phase 1: Detect sudden deceleration
     const decelerationEvents = detectDecelerationPhase(dataPoints);
     console.log(`Phase 1: Detected ${decelerationEvents.length} deceleration events`);
 
-    // Phase 2: Detect freefall
     const freefallEvents = detectFreefallPhase(dataPoints);
     console.log(`Phase 2: Detected ${freefallEvents.length} freefall events`);
 
-    // Phase 3: Detect ground impact (strict mode first - requires local peaks)
     const impactEvents = detectImpactPhase(dataPoints, true);
     console.log(`Phase 3: Detected ${impactEvents.length} impact events`);
 
-    // Validate three-phase sequence
     const validFalls = validateFallSequence(decelerationEvents, freefallEvents, impactEvents);
     console.log(`Validated ${validFalls.length} three-phase falls`);
     
