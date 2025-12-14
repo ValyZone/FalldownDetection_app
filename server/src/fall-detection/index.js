@@ -260,8 +260,8 @@ function detectImpactPhase(dataPoints, strictMode = true) {
 function detectPostImpactStillness(dataPoints, impactTime) {
   const SLIDING_WINDOW = 2.0; // Allow 2 seconds for sliding/tumbling after impact
   const STILLNESS_WINDOW = 1.5; // Then check for 1.5 seconds of stillness
-  const STILLNESS_THRESHOLD = 12.0; // ~1.22g - near gravity indicates stationary (relaxed)
-  const STILLNESS_VARIANCE_THRESHOLD = 3.0; // Low variance indicates consistent stillness (relaxed)
+  const STILLNESS_THRESHOLD = 9.5; // ~0.97g - device at odd angle after fall (balanced)
+  const STILLNESS_VARIANCE_THRESHOLD = 1.5; // Low variance required (balanced)
   
   // Find data points in the stillness check window (after sliding period)
   const stillnessCheckStart = impactTime + SLIDING_WINDOW;

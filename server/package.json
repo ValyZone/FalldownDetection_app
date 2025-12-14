@@ -7,9 +7,11 @@
   "scripts": {
     "start": "nodemon src/index.js",
     "start:prod": "node src/index.js",
-    "test": "node test-runner.js",
+    "test": "node scripts/run_full_file_tests.js",
     "test:manual": "node manual-test.js",
-    "test:normalized": "node scripts/run_normalized_tests.js"
+    "test:normalized": "node scripts/run_normalized_tests.js",
+    "test:chunked": "node scripts/run_normalized_tests.js",
+    "test:full": "node scripts/run_full_file_tests.js"
   },
   "keywords": ["fall-detection", "accelerometer", "discord-bot"],
   "author": "",
