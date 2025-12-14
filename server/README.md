@@ -47,6 +47,3 @@ A package.json fájlban elérhető npm scriptek:
 - **`npm run test:chunked`** - Ugyanaz, mint a `test:normalized`
 - **`npm run test:manual`** - Interaktív manuális teszt eszköz (manual-test.js)
 
-## License
-
-ISC
